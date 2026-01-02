@@ -1,1 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>DB Service PK</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="SIM & CNIC lookup tool for Pakistani networks." />
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
+  <div class="container">
+    <header class="header">
+      <div class="header-left">
+        <label for="upload" style="cursor: pointer;">
+          <img src="https://i.supaimg.com/4f71a7aa-9e44-450a-922b-cbc42c3da0c6.png" alt="Profile" class="header-logo-img" id="dashboardProfileImage">
+        </label>
+        <input type="file" accept="image/*" id="upload" style="display: none;">
+      </div>
+      
+      <div class="header-center">DB Service PK</div>
+      <button class="theme-toggle" id="theme-toggle" title="Toggle theme">🌙</button>
+    </header>
+
+    <div class="api-status-bar">
+      <div class="api-badge loading" id="simApiBadge">
+        <i class="fas fa-circle-notch fa-spin"></i> SIM/CNIC
+      </div>
+      <div class="api-badge-separator">|</div>
+      <div class="api-badge loading" id="truecallerApiBadge">
+        <i class="fas fa-circle-notch fa-spin"></i> Truecaller
+      </div>
+    </div>
+
+    <main class="form-section">
+      <div class="form-group">
+        <label for="phone"><i class="fas fa-search"></i> Enter Phone Number or CNIC</label>
+        <input type="text" id="phone" class="search-input" placeholder="e.g., 03001234567 or 1234512345678" autocomplete="off">
+        <div class="input-hint">
+          <i class="fas fa-info-circle"></i> Both APIs checked for availability
+        </div>
+      </div>
+      
+      <button class="btn btn-primary" id="submit-button">
+        <i class="fas fa-search"></i> Search Database
+      </button>
+      
+      <div class="button-group">
+        <button class="btn btn-secondary" id="clearBtn">
+          <i class="fas fa-broom"></i> Clear
+        </button>
+        <button class="btn btn-secondary" id="truecallerBtn">
+          <i class="fas fa-id-badge"></i> Truecaller
+        </button>
+      </div>
+
+      <button class="btn btn-secondary" id="exportBtn" style="margin-top: 12px; width: 100%;">
+          <i class="fas fa-download"></i> Export Results
+      </button>
+
+      <div class="results-header" style="display: none;" id="resultsHeader">
+        <div class="results-count" id="resultsCount">0 records found</div>
+        <div class="results-actions">
+          <button class="action-btn" id="copyAllBtn">
+            <i class="fas fa-copy"></i> Copy All
+          </button>
+        </div>
+      </div>
+
+      <div id="result">
+        <div class="empty-state">
+          <div class="empty-icon">
+            <i class="fas fa-database"></i>
+          </div>
+          <h3 class="state-title">No Search Yet</h3>
+          <p class="state-message">
+            Enter a phone number or CNIC to search the database.
+            Results will appear here automatically.
+          </p>
+        </div>
+      </div>
+
+      <div class="contact-card">
+        <h3><i class="fas fa-user-tie"></i> About the Developer</h3>
+        <p>
+          Hi! I'm <strong>Haseeb Sahil</strong>, creator of <strong>DB Service PK</strong>. 
+          This tool helps you find SIM data using CNIC or phone number.
+        </p>
+        <a href="https://t.me/Haseeb_Contact_Bot" class="chat-bubble" target="_blank" title="Chat on Telegram">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="Telegram" />
+          Chat on Telegram
+        </a>
+      </div>
+    </main>
+  </div>
+
+  <div id="truecallerModal" class="modal">
+    <div class="modal-content">
+      <span class="modal-close" id="closeTcModal">&times;</span>
+      <div class="truecaller-result" id="truecallerResultDisplay">
+        <h4 id="tcModalTitle"><i class="fas fa-id-badge"></i> Truecaller Result</h4>
+        <div id="tcLoadingState" class="loading-state" style="padding: 20px 0; display: none;">
+            <div class="loading-icon" style="font-size: 30px;">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
+            <p class="state-message" style="margin-bottom: 0;">Searching...</p>
+        </div>
+        
+        <div id="tcNameDisplay" style="display: none;">---</div>
+        <div id="tcSimDisplay" style="display: none;">Unknown SIM</div>
+        <p style="margin-top: 15px; font-size: 13px; color: var(--gray);">Data provided by Truecaller API</p>
+      </div>
+    </div>
+  </div>
+
+  <a href="https://t.me/hsmodzofc2" target="_blank" title="Join Telegram" id="floatingTelegram">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="Telegram Logo" />
+  </a>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
