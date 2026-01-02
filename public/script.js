@@ -200,20 +200,20 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   
   async function queryAPI(query) {
-    // Vercel backend proxy ke zariye call karne ke liye:
-    const response = await fetchWithTimeout(`${MAIN_API}?query=${encodeURIComponent(query)}`, 15000, {
-        headers: { 
-            'x-requested-with': 'XMLHttpRequest'
-        }
-    });
+    const apiUrl = `${MAIN_API}?query=${encodeURIComponent(query)}`;
+    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`;
+    
+    const response = await fetchWithTimeout(`${MAIN_API}?query=${query}`, 15000, {
+          headers: { 'x-requested-with': 'XMLHttpRequest' }
+      });
     
     if (!response.ok) {
-      throw new Error(`API returned ${response.status} - Check if Backend is running`);
+      throw new Error(`API returned ${response.status}`);
     }
     
     const data = await response.json();
     return processAPIResponse(data);
-}
+  }
   
   function processAPIResponse(data) {
     const results = [];
@@ -541,24 +541,20 @@ Source: ${result.source}
     tcLoadingState.style.display = "flex";
     tcNameDisplay.style.display = "none";
     tcSimDisplay.style.display = "none";
-async function performTruecallerLookup(number) {
-    const response = await fetchWithTimeout(`${TRUECALLER_API}${encodeURIComponent(number)}`, 15000, {
-        headers: { 
-            'x-requested-with': 'XMLHttpRequest' 
+    
+    try {
+        const API_URL = TRUECALLER_API + finalNumberForApi;
+        const PROXIED_API_URL = "https://corsproxy.io/?" + encodeURIComponent(API_URL);
+
+        const response = await fetchWithTimeout(`${TRUECALLER_API}${number}`, 15000, {
+          headers: { 'x-requested-with': 'XMLHttpRequest' }
+      });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP Error! Status: ${response.status}`);
         }
-    });
-      
-      if (!response.ok) {
-        throw new Error(`Server responded with ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error("Truecaller API Error:", error);
-      throw error;
-    }
-  }
+        
+        const data = await response.json();
         
         if (data && data.success) {
             phoneInput.value = ""; // Clear input on successful search
@@ -633,6 +629,7 @@ async function performTruecallerLookup(number) {
   async function fetchWithTimeout(resource, timeout = 10000, options = {}) {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), timeout);
+    
     try {
       const response = await fetch(resource, {
         ...options,
@@ -642,6 +639,9 @@ async function performTruecallerLookup(number) {
       return response;
     } catch (error) {
       clearTimeout(id);
+      if (error.name === 'AbortError') {
+          throw new Error("Request timed out");
+      }
       throw error;
     }
   }
