@@ -24,6 +24,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const tcNameDisplay = document.getElementById("tcNameDisplay");
   const tcSimDisplay = document.getElementById("tcSimDisplay");
   const tcLoadingState = document.getElementById("tcLoadingState");
+  const tcResultContent = document.getElementById("tcResultContent");
+  const tcErrorState = document.getElementById("tcErrorState");
   
   // ===== App State =====
   let searchResults = [];
@@ -47,10 +49,15 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   
   // Modal Close Listeners
-  closeTcModal.addEventListener("click", () => truecallerModal.style.display = "none");
+  closeTcModal.addEventListener("click", () => {
+    truecallerModal.style.display = "none";
+    resetTruecallerModal();
+  });
+  
   window.addEventListener("click", (e) => {
     if (e.target === truecallerModal) {
       truecallerModal.style.display = "none";
+      resetTruecallerModal();
     }
   });
   
@@ -92,12 +99,46 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
   
+  function resetTruecallerModal() {
+    tcLoadingState.style.display = "none";
+    tcResultContent.style.display = "none";
+    tcErrorState.style.display = "none";
+  }
+  
+  function showTruecallerLoading() {
+    tcLoadingState.style.display = "flex";
+    tcResultContent.style.display = "none";
+    tcErrorState.style.display = "none";
+  }
+  
+  function showTruecallerResult(name, sim) {
+    tcLoadingState.style.display = "none";
+    tcResultContent.style.display = "block";
+    tcErrorState.style.display = "none";
+    
+    tcNameDisplay.textContent = name;
+    tcSimDisplay.textContent = sim;
+    
+    // Set appropriate color
+    if (name.includes("N/A") || name.includes("Not Available") || name === "---") {
+        tcNameDisplay.style.color = "var(--warning)";
+    } else {
+        tcNameDisplay.style.color = "var(--primary)";
+    }
+  }
+  
+  function showTruecallerError() {
+    tcLoadingState.style.display = "none";
+    tcResultContent.style.display = "none";
+    tcErrorState.style.display = "block";
+  }
+  
   async function checkAPIsStatus() {
     // Test SIM/CNIC API
     try {
-      const simApiUrl = `${MAIN_API}?query=03001234567`;
-      const simProxyUrl = `https://corsproxy.io/?${encodeURIComponent(simApiUrl)}`;
-      const simResponse = await fetchWithTimeout(simProxyUrl, 5000);
+      const simResponse = await fetchWithTimeout(`${MAIN_API}?query=03001234567`, 5000, {
+        headers: { 'x-requested-with': 'XMLHttpRequest' }
+      });
       
       if (simResponse.ok) {
         simApiBadge.innerHTML = '<i class="fas fa-circle-check"></i> SIM/CNIC';
@@ -113,9 +154,9 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // Test Truecaller API
     try {
-      const truecallerUrl = `${TRUECALLER_API}923001234567`;
-      const tcProxyUrl = `https://corsproxy.io/?${encodeURIComponent(truecallerUrl)}`;
-      const tcResponse = await fetchWithTimeout(tcProxyUrl, 5000);
+      const tcResponse = await fetchWithTimeout(`${TRUECALLER_API}923001234567`, 5000, {
+        headers: { 'x-requested-with': 'XMLHttpRequest' }
+      });
       
       if (tcResponse.ok) {
         truecallerApiBadge.innerHTML = '<i class="fas fa-circle-check"></i> Truecaller';
@@ -200,12 +241,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   
   async function queryAPI(query) {
-    const apiUrl = `${MAIN_API}?query=${encodeURIComponent(query)}`;
-    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`;
-    
-    const response = await fetchWithTimeout(`${MAIN_API}?query=${query}`, 15000, {
-          headers: { 'x-requested-with': 'XMLHttpRequest' }
-      });
+    const response = await fetchWithTimeout(`${MAIN_API}?query=${encodeURIComponent(query)}`, 15000, {
+      headers: { 'x-requested-with': 'XMLHttpRequest' }
+    });
     
     if (!response.ok) {
       throw new Error(`API returned ${response.status}`);
@@ -261,8 +299,10 @@ document.addEventListener("DOMContentLoaded", () => {
     let html = "";
     
     // Check if we need to show post-2022 warning
-    const apiUrl = `${MAIN_API}?query=${encodeURIComponent(phoneInput.value.trim().replace(/\D/g, ""))}`;
-    fetch(`https://corsproxy.io/?${encodeURIComponent(apiUrl)}`)
+    const query = phoneInput.value.trim().replace(/\D/g, "");
+    fetch(`${MAIN_API}?query=${encodeURIComponent(query)}`, {
+      headers: { 'x-requested-with': 'XMLHttpRequest' }
+    })
       .then(res => res.json())
       .then(data => {
         if (data.results_count === 1 && data.results[0].mobile && 
@@ -331,9 +371,10 @@ document.addEventListener("DOMContentLoaded", () => {
     resultsCount.textContent = "0 records found";
     resultsHeader.style.display = "none";
     
-    // Check if this is a post-2022 case
-    const apiUrl = `${MAIN_API}?query=${encodeURIComponent(phoneInput.value.trim().replace(/\D/g, ""))}`;
-    fetch(`https://corsproxy.io/?${encodeURIComponent(apiUrl)}`)
+    const query = phoneInput.value.trim().replace(/\D/g, "");
+    fetch(`${MAIN_API}?query=${encodeURIComponent(query)}`, {
+      headers: { 'x-requested-with': 'XMLHttpRequest' }
+    })
       .then(res => res.json())
       .then(data => {
         if (data.results_count === 1 && data.results[0].mobile && 
@@ -516,8 +557,10 @@ Source: ${result.source}
         return;
     }
 
-    if (!/^(\d{10,11})$/.test(rawNumber.replace(/\D/g, ""))) {
-        showToast("error", "Invalid Number", "Truecaller requires a 10 or 11 digit mobile number.");
+    // نمبر کی تصدیق
+    const cleanNumber = rawNumber.replace(/\D/g, '');
+    if (!/^(\d{10,11})$/.test(cleanNumber)) {
+        showToast("error", "Invalid Number", "Please enter a valid 10 or 11 digit mobile number.");
         phoneInput.focus();
         return;
     }
@@ -528,27 +571,20 @@ Source: ${result.source}
       return;
     }
     
-    let cleanNumber = rawNumber.replace(/\D/g, "");
-    if (cleanNumber.startsWith("0")) {
-        cleanNumber = cleanNumber.substring(1);
-    }
-    const finalNumberForApi = "92" + cleanNumber;
-    
     truecallerBtn.disabled = true;
     truecallerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
     
     truecallerModal.style.display = "block";
-    tcLoadingState.style.display = "flex";
-    tcNameDisplay.style.display = "none";
-    tcSimDisplay.style.display = "none";
+    showTruecallerLoading();
     
     try {
-        const API_URL = TRUECALLER_API + finalNumberForApi;
-        const PROXIED_API_URL = "https://corsproxy.io/?" + encodeURIComponent(API_URL);
-
-        const response = await fetchWithTimeout(`${TRUECALLER_API}${number}`, 15000, {
-          headers: { 'x-requested-with': 'XMLHttpRequest' }
-      });
+        // Backend API call
+        const response = await fetchWithTimeout(`${TRUECALLER_API}${encodeURIComponent(cleanNumber)}`, 15000, {
+            headers: { 
+                'x-requested-with': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        });
         
         if (!response.ok) {
             throw new Error(`HTTP Error! Status: ${response.status}`);
@@ -556,38 +592,30 @@ Source: ${result.source}
         
         const data = await response.json();
         
-        if (data && data.success) {
-            phoneInput.value = ""; // Clear input on successful search
-            
-            const name = data.name && data.name.trim() !== "" ? data.name : "N/A (No Name Found)";
-            const sim = data.sim || "Unknown Carrier";
-
-            tcLoadingState.style.display = "none";
-            tcNameDisplay.style.display = "block";
-            tcSimDisplay.style.display = "block";
-            tcNameDisplay.textContent = name;
-            tcSimDisplay.textContent = sim;
-            tcNameDisplay.style.color = name.startsWith("N/A") ? "var(--warning)" : "var(--info)";
-
-            if (name.startsWith("N/A")) {
-                showToast("warning", "TC Not Found", "Name not available for this number.");
-            } else {
-                showToast("success", "TC Found!", "Caller Name Found!");
-            }
-        } else {
-            tcLoadingState.style.display = "none";
-            tcNameDisplay.style.display = "block";
-            tcNameDisplay.textContent = "No Record Found";
-            tcNameDisplay.style.color = "var(--danger)";
-            showToast("warning", "TC No Record", "Truecaller did not return a name.");
+        if (data.success === false || data.error) {
+            throw new Error(data.message || data.error || "API returned false");
         }
+        
+        phoneInput.value = ""; // Clear input on successful search
+        
+        const name = data.name && data.name.trim() !== "" ? data.name : "N/A (No Name Found)";
+        const sim = data.sim || "Unknown Carrier";
+
+        showTruecallerResult(name, sim);
+        
+        // Toast message
+        if (name.includes("N/A") || name === "N/A (No Name Found)") {
+            showToast("warning", "Name Not Found", "Truecaller doesn't have name for this number.");
+        } else if (data.source === "backup-api") {
+            showToast("info", "Backup API Used", "Data retrieved from backup API.");
+        } else {
+            showToast("success", "Name Found!", "Caller Name Found!");
+        }
+        
     } catch (error) {
         console.error("Truecaller Fetch Error:", error);
-        tcLoadingState.style.display = "none";
-        tcNameDisplay.style.display = "block";
-        tcNameDisplay.textContent = "API Error";
-        tcNameDisplay.style.color = "var(--danger)";
-        showToast("error", "TC Search Failed", "An error occurred");
+        showTruecallerError();
+        showToast("error", "Search Failed", "Could not fetch from Truecaller. Try later.");
     } finally {
         truecallerBtn.disabled = false;
         truecallerBtn.innerHTML = '<i class="fas fa-id-badge"></i> Truecaller';
